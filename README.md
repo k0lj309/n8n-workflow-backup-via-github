@@ -1,4 +1,7 @@
 # n8n Workflow Backup
+
+Backs up all n8n workflows to this repo automatically. Workflows are organized into folders by tag and named after the workflow itself. Every run creates or updates the relevant files — GitHub handles the version history.
+
 ```
 Manual ──► Config ──► Get All ──► Prepare ──► Loop Over Items
                       Workflows    File Paths       │
@@ -27,4 +30,4 @@ Manual ──► Config ──► Get All ──► Prepare ──► Loop Over 
                                                    ↩ back to loop
 ```
 
-Backs up all n8n workflows to this repo automatically. Workflows are organized into folders by tag and named after the workflow itself. Every run creates or updates the relevant files — GitHub handles the version history.
+
