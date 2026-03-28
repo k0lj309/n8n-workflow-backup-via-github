@@ -1,0 +1,376 @@
+{
+  "name": "Backup Workflows to GitHub (Tag Folders)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "f1a31ed2-428b-403c-a665-89dc5f10ac4d",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1600,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "repo-owner",
+              "name": "repo_owner",
+              "value": "YOUR_GITHUB_NAME",
+              "type": "string"
+            },
+            {
+              "id": "repo-name",
+              "name": "repo_name",
+              "value": "REPO_NAME",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "730051a8-1bac-4290-8666-20c8b223f924",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1344,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "filters": {},
+        "requestOptions": {}
+      },
+      "id": "6b15d267-030d-4cd1-a1db-32021526cb93",
+      "name": "Get All Workflows",
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "position": [
+        -1120,
+        656
+      ],
+      "credentials": {
+        "n8nApi": {
+          "id": "vy0mfRIbedFwp7Tx",
+          "name": "n8n account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst config = $('Config').first().json;\nconst result = [];\n\nfor (const item of items) {\n  const workflow = item.json;\n\n  // Archivierte Ã¼berspringen\n  if (workflow.isArchived) continue;\n\n  const safeName = workflow.name\n    .replace(/ - /g, '_')\n    .replace(/ /g, '_')\n    .replace(/[^a-zA-Z0-9_]/g, '')\n    .replace(/_+/g, '_')\n    .replace(/^_+|_+$/g, '');\n\n  let folder = 'workflows';\n  if (workflow.tags && workflow.tags.length > 0) {\n    const firstTag = workflow.tags[0].name || workflow.tags[0];\n    folder = firstTag\n      .replace(/ - /g, '_')\n      .replace(/ /g, '_')\n      .replace(/[^a-zA-Z0-9_]/g, '')\n      .replace(/_+/g, '_')\n      .replace(/^_+|_+$/g, '');\n  }\n\n  result.push({\n    json: {\n      workflowId: workflow.id,\n      workflowName: workflow.name,\n      safeName: safeName,\n      folder: folder,\n      filePath: `${folder}/${safeName}.json`,\n      fileContent: JSON.stringify(workflow, null, 2),\n      repo_owner: config.repo_owner,\n      repo_name: config.repo_name\n    }\n  });\n}\n\nreturn result;"
+      },
+      "id": "807e5e63-733e-4512-87a1-9b5310dab1c6",
+      "name": "Prepare File Paths",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -896,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "get",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $json.repo_owner }}"
+        },
+        "repository": "={{ $json.repo_name }}",
+        "filePath": "={{ $json.filePath }}",
+        "asBinaryProperty": false,
+        "additionalParameters": {}
+      },
+      "id": "116cfa9c-6b93-414c-b431-2699ed694b08",
+      "name": "Get File from GitHub",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        640
+      ],
+      "webhookId": "8c925ad6-1148-4694-b2aa-7765dba82633",
+      "credentials": {
+        "githubApi": {
+          "id": "MJWK3gTui83yJ88Q",
+          "name": "GitHub account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const githubResult = $input.item;\nconst preparedData = $input.item.json;\n\nconst githubSha = githubResult.json?.sha || null;\nconst isNew = githubSha === null;\n\nconst { sha, ...cleanPreparedData } = preparedData;\n\nreturn {\n  json: {\n    ...cleanPreparedData,\n    github_status: isNew ? 'new' : 'exists',\n    sha: githubSha\n  }\n};"
+      },
+      "id": "41a084b0-86e1-4c3b-be07-3a4e8cf1ec3a",
+      "name": "Is New or Exists",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -256,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-new",
+              "leftValue": "={{ $json.github_status }}",
+              "rightValue": "new",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0b94b542-d136-4d69-a86a-ee1ff50a88b1",
+      "name": "New or Exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "owner": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.repo_owner }}",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.repo_name }}",
+          "mode": "name"
+        },
+        "filePath": "={{ $('Loop Over Items').item.json.filePath }}",
+        "fileContent": "={{ $('Loop Over Items').item.json.fileContent }}",
+        "commitMessage": "=backup: {{ $('Loop Over Items').item.json.workflowName }} (new)"
+      },
+      "id": "ae273aab-1a1f-4a96-97fd-49c090acdd0a",
+      "name": "Create New File",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [
+        416,
+        624
+      ],
+      "webhookId": "beeffa1d-d828-47bc-b544-ad156ce3e76a",
+      "credentials": {
+        "githubApi": {
+          "id": "MJWK3gTui83yJ88Q",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.repo_owner }}",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.repo_name }}",
+          "mode": ""
+        },
+        "filePath": "={{ $('Is New or Exists').item.json.path }}",
+        "fileContent": "={{ $('Prepare File Paths').item.json.fileContent }}",
+        "commitMessage": "=backup: {{ $json.name }} (updated)"
+      },
+      "id": "62d37a4c-ab2e-46eb-9952-ea6739ef0094",
+      "name": "Edit Existing File",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [
+        400,
+        800
+      ],
+      "webhookId": "286bad40-d335-4152-9e1e-1ea5cc404f1d",
+      "credentials": {
+        "githubApi": {
+          "id": "MJWK3gTui83yJ88Q",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -704,
+        608
+      ],
+      "id": "35eefdc1-649c-424d-967b-fb8a0724c769",
+      "name": "Loop Over Items"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Get All Workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Workflows": {
+      "main": [
+        [
+          {
+            "node": "Prepare File Paths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare File Paths": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get File from GitHub": {
+      "main": [
+        [
+          {
+            "node": "Is New or Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is New or Exists": {
+      "main": [
+        [
+          {
+            "node": "New or Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New or Exists?": {
+      "main": [
+        [
+          {
+            "node": "Create New File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Existing File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Get File from GitHub",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Existing File": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create New File": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "2e5352b4-95be-4dd3-a88f-64c89110c986",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "40b7b44da617167bca85014962945d38dde91e6c277e33e84e37b25e5f637473"
+  },
+  "id": "Ih4HVI2XwLuIXZ0T",
+  "tags": [
+    {
+      "name": "Github",
+      "id": "OTPiXKfRavUzUfhZ",
+      "updatedAt": "2026-03-27T21:08:58.794Z",
+      "createdAt": "2026-03-27T21:08:58.794Z"
+    }
+  ]
+}
