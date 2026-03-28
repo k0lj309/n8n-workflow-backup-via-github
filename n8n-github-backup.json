@@ -56,7 +56,6 @@
       ],
       "credentials": {
         "n8nApi": {
-          "id": "vy0mfRIbedFwp7Tx",
           "name": "n8n account"
         }
       }
@@ -96,10 +95,8 @@
         -480,
         640
       ],
-      "webhookId": "8c925ad6-1148-4694-b2aa-7765dba82633",
       "credentials": {
         "githubApi": {
-          "id": "MJWK3gTui83yJ88Q",
           "name": "GitHub account"
         }
       },
@@ -177,10 +174,8 @@
         416,
         624
       ],
-      "webhookId": "beeffa1d-d828-47bc-b544-ad156ce3e76a",
       "credentials": {
         "githubApi": {
-          "id": "MJWK3gTui83yJ88Q",
           "name": "GitHub account"
         }
       }
@@ -211,10 +206,8 @@
         400,
         800
       ],
-      "webhookId": "286bad40-d335-4152-9e1e-1ea5cc404f1d",
       "credentials": {
         "githubApi": {
-          "id": "MJWK3gTui83yJ88Q",
           "name": "GitHub account"
         }
       }
@@ -359,18 +352,12 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "2e5352b4-95be-4dd3-a88f-64c89110c986",
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "40b7b44da617167bca85014962945d38dde91e6c277e33e84e37b25e5f637473"
+    "templateCredsSetupCompleted": true
   },
-  "id": "Ih4HVI2XwLuIXZ0T",
   "tags": [
     {
-      "name": "Github",
-      "id": "OTPiXKfRavUzUfhZ",
-      "updatedAt": "2026-03-27T21:08:58.794Z",
-      "createdAt": "2026-03-27T21:08:58.794Z"
+      "name": "Github"
     }
   ]
 }
